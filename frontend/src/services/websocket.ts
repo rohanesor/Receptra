@@ -4,7 +4,7 @@ const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5
 const WS_BASE = API_BASE.replace(/^http/, 'ws').replace(/\/api\/v1$/, '/api/v1/live-calls');
 
 export interface WSMessage {
-  event: 'call_started' | 'transcript_update' | 'call_ended';
+  event: 'call_started' | 'transcript_update' | 'call_ended' | 'appointment_created' | 'message_created';
   payload: any;
 }
 

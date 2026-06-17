@@ -32,10 +32,11 @@ export class ConversationManager {
   // Interruption trigger
   private currentElevenLabsSession: ElevenLabsStream | null = null;
 
-  constructor(callSid: string, customerPhone: string, twilioWs: WebSocket) {
+  constructor(callSid: string, customerPhone: string, twilioWs: WebSocket, streamSid?: string) {
     this.callSid = callSid;
     this.customerPhone = customerPhone;
     this.twilioWs = twilioWs;
+    this.audioStreamSid = streamSid || null;
     this.claudeService = new ClaudeService();
     this.callStartTime = new Date();
     
@@ -180,7 +181,7 @@ export class ConversationManager {
     });
 
     try {
-      await this.claudeService.getStream(this.history, {
+      await this.claudeService.getStream(this.history, this.customerPhone, {
         onTextToken: (token) => {
           if (!this.claudeIsGenerating) return; // Terminate if interrupted
           
@@ -296,14 +297,28 @@ export class ConversationManager {
       if (name === 'check_availability') {
         return await checkAvailability(input.date);
       } else if (name === 'create_appointment') {
-        return await createAppointment(
+        const result = await createAppointment(
           input.customerName,
           input.customerPhone,
           input.serviceId,
           input.startTime
         );
+        if (result.success && result.appointment) {
+          ConversationManager.broadcastToDashboard('appointment_created', result.appointment);
+        }
+        return result;
       } else if (name === 'take_message') {
-        return await takeMessage(input.customerName, input.customerPhone, input.reason);
+        const result = await takeMessage(input.customerName, input.customerPhone, input.reason);
+        if (result.success) {
+          ConversationManager.broadcastToDashboard('message_created', {
+            id: Math.random().toString(36).substring(2, 9),
+            customerName: input.customerName,
+            customerPhone: input.customerPhone,
+            reason: input.reason,
+            createdAt: new Date().toISOString(),
+          });
+        }
+        return result;
       }
       return { success: false, message: `Tool ${name} not found.` };
     } catch (err: any) {

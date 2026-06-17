@@ -43,6 +43,10 @@ export default function App() {
         });
       } else if (event === 'call_ended') {
         setActiveCall(null);
+      } else if (event === 'appointment_created') {
+        window.dispatchEvent(new CustomEvent('appointment_created', { detail: payload }));
+      } else if (event === 'message_created') {
+        window.dispatchEvent(new CustomEvent('message_created', { detail: payload }));
       }
     });
 

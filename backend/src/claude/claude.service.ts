@@ -18,7 +18,7 @@ export interface MessageParam {
 /**
  * Dynamically queries the services from the database and constructs the system prompt
  */
-export async function getSystemPrompt(): Promise<string> {
+export async function getSystemPrompt(customerPhone: string): Promise<string> {
   const services = await prisma.service.findMany();
   const servicesList = services
     .map((s) => `- ${s.name}: Price $${s.price}, Duration ${s.durationMinutes} minutes (Service ID: ${s.id})`)
@@ -47,11 +47,14 @@ VOICE CHANNEL RULES:
 5. Do NOT invent dates or times. If you check availability and slots are available, list 2-3 options.
 6. The user might say "tomorrow", "next Friday", etc. Today is ${now.weekdayLong}, ${now.toFormat('yyyy-MM-dd')}. Use this to calculate target dates.
 
+CALL CONTEXT:
+- Caller Phone Number: ${customerPhone} (You MUST use this phone number directly when invoking 'create_appointment' or 'take_message' tools. Do NOT ask the customer to verbally speak their phone number.)
+
 APPOINTMENT BOOKING PROCESS:
 1. Ask what service they want.
 2. Ask what date and time they prefer.
 3. Call "check_availability" first with the target date (YYYY-MM-DD) to see if slots exist.
-4. If the slot they want is free, ask for their name, and book using "create_appointment" passing their name, phone, service ID, and start time in ISO format (e.g. ${now.toFormat('yyyy-MM-dd')}T14:30:00+05:30).
+4. If the slot they want is free, ask for their name, and book using "create_appointment" passing their name, the caller's phone number (${customerPhone}), service ID, and start time in ISO format (e.g. ${now.toFormat('yyyy-MM-dd')}T14:30:00+05:30).
 5. If they ask about something you don't know, or want to speak with a human, offer to take a callback message using "take_message".
 
 Remember: Keep responses to less than 25 words unless listing available slots. Speak like a real human receptionist.`;
@@ -139,9 +142,10 @@ export class ClaudeService {
    */
   public async getStream(
     history: MessageParam[],
+    customerPhone: string,
     callbacks: ClaudeStreamCallbacks
   ): Promise<void> {
-    const systemPrompt = await getSystemPrompt();
+    const systemPrompt = await getSystemPrompt(customerPhone);
 
     // Check if key is placeholder
     const isPlaceholder = !config.anthropic.apiKey || 
@@ -150,7 +154,7 @@ export class ClaudeService {
 
     if (isPlaceholder) {
       console.log('[Claude Service] Running in simulation mode (API key is placeholder).');
-      await this.runSimulation(history, callbacks);
+      await this.runSimulation(history, customerPhone, callbacks);
       return;
     }
 
@@ -200,7 +204,7 @@ export class ClaudeService {
       }
     } catch (error) {
       console.warn('[Claude Service] Anthropic API failed (likely billing/access limit). Falling back to Simulation Mode.', error);
-      await this.runSimulation(history, callbacks);
+      await this.runSimulation(history, customerPhone, callbacks);
     }
   }
 
@@ -209,24 +213,23 @@ export class ClaudeService {
    */
   private async runSimulation(
     history: MessageParam[],
+    customerPhone: string,
     callbacks: ClaudeStreamCallbacks
   ): Promise<void> {
     const lastUserMsg = history[history.length - 1]?.content;
     const userText = typeof lastUserMsg === 'string' ? lastUserMsg.toLowerCase() : '';
     let responseText = "Sure! I can help you with bookings or FAQs. What service are you looking for today?";
 
-    if (userText.includes('haircut') || userText.includes('beard') || userText.includes('facial')) {
+    // Prioritize booking confirmation block if we have a names/confirmation context
+    if (userText.trim().length > 0 && history.length >= 5) {
       const services = await prisma.service.findMany();
-      const haircut = services.find(s => s.name.toLowerCase().includes('haircut')) || services[0];
+      const service = services.find(s => s.name.toLowerCase().includes('haircut')) || services[0];
       
-      responseText = `Great! A ${haircut.name} is $${haircut.price} and takes ${haircut.durationMinutes} minutes. We have slots available tomorrow at 10:00 AM and 2:30 PM. What time works for you?`;
-    } else if (userText.includes('10') || userText.includes('2:30') || userText.includes('tomorrow') || userText.includes('pm') || userText.includes('am')) {
-      responseText = "Perfect, I can book that slot. Can I please have your name to confirm the appointment?";
-    } else if (userText.trim().length > 0 && history.length >= 5) {
-      const services = await prisma.service.findMany();
-      const service = services[0];
-      const name = userText.charAt(0).toUpperCase() + userText.slice(1);
-      
+      // Extract name from "my name is X" or similar, or default to capitalization of input
+      let name = userText.replace(/^(yes please|my name is|i am|this is|name is)\s+/i, '').trim();
+      name = name.charAt(0).toUpperCase() + name.slice(1);
+      if (!name) name = 'Customer';
+
       responseText = `Awesome! I have booked a ${service.name} for you, ${name}. You will receive a text confirmation shortly. See you tomorrow!`;
       
       // Stream text response
@@ -240,12 +243,19 @@ export class ClaudeService {
       setTimeout(() => {
         callbacks.onToolUseComplete('mock_tool_id', 'create_appointment', {
           customerName: name,
-          customerPhone: '6380221196',
+          customerPhone: customerPhone,
           serviceId: service.id,
           startTime: `${tomorrowStr}T10:00:00+05:30`
         });
       }, 1500);
       return;
+    } else if (userText.includes('haircut') || userText.includes('beard') || userText.includes('facial')) {
+      const services = await prisma.service.findMany();
+      const haircut = services.find(s => s.name.toLowerCase().includes('haircut')) || services[0];
+      
+      responseText = `Great! A ${haircut.name} is $${haircut.price} and takes ${haircut.durationMinutes} minutes. We have slots available tomorrow at 10:00 AM and 2:30 PM. What time works for you?`;
+    } else if (userText.includes('10') || userText.includes('2:30') || userText.includes('tomorrow') || /\bpm\b/i.test(userText) || /\bam\b/i.test(userText)) {
+      responseText = "Perfect, I can book that slot. Can I please have your name to confirm the appointment?";
     }
 
     // Stream text response

@@ -28,6 +28,16 @@ export default function Messages() {
     loadMessages();
   }, []);
 
+  useEffect(() => {
+    const handleMessageCreated = () => {
+      loadMessages();
+    };
+    window.addEventListener('message_created', handleMessageCreated);
+    return () => {
+      window.removeEventListener('message_created', handleMessageCreated);
+    };
+  }, []);
+
   const handleResolve = (id: string) => {
     const next = new Set(resolvedIds);
     if (next.has(id)) {

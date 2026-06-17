@@ -57,6 +57,22 @@ export default function Appointments() {
   }, [selectedDate]);
 
   useEffect(() => {
+    const handleAppointmentCreated = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.startTime) {
+        const appDate = new Date(customEvent.detail.startTime).toISOString().split('T')[0];
+        if (appDate === selectedDate) {
+          loadData(selectedDate);
+        }
+      }
+    };
+    window.addEventListener('appointment_created', handleAppointmentCreated);
+    return () => {
+      window.removeEventListener('appointment_created', handleAppointmentCreated);
+    };
+  }, [selectedDate]);
+
+  useEffect(() => {
     loadServices();
   }, []);
 

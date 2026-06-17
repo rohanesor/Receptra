@@ -72,11 +72,12 @@ wssApp.ws('/api/v1/twilio/stream', (ws, req) => {
       
       if (data.event === 'start') {
         const callSid = data.start.callSid;
+        const streamSid = data.start.streamSid || data.streamSid;
         const customerPhone = pendingCalls.get(callSid) || 'Unknown Caller';
         pendingCalls.delete(callSid); // Clean up cache
         
         console.log(`[Twilio WS] Initializing manager for call ${callSid} (${customerPhone})`);
-        manager = new ConversationManager(callSid, customerPhone, ws);
+        manager = new ConversationManager(callSid, customerPhone, ws, streamSid);
       } else if (data.event === 'media') {
         if (manager) {
           manager.handleTwilioAudio(data.media.payload, data.streamSid);
