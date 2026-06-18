@@ -1,6 +1,6 @@
-# RingDesk AI (AI Receptionist for Barbershops)
+# Receptra (AI Receptionist for Barbershops)
 
-RingDesk AI is a production-minded AI voice receptionist built for barbershops. It picks up incoming phone calls, conducts natural voice conversations with customers, books appointments, answers business FAQs, takes callback messages, and synchronizes live rolling transcripts to an elegant owner dashboard.
+Receptra is a production-minded AI voice receptionist built for barbershops. It picks up incoming phone calls, conducts natural voice conversations with customers, books appointments, answers business FAQs, takes callback messages, and synchronizes live rolling transcripts to an elegant owner dashboard.
 
 ## System Architecture
 

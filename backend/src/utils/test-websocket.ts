@@ -5,7 +5,7 @@ const PORT = 5000;
 const URL = `ws://localhost:${PORT}/api/v1/twilio/stream`;
 
 console.log(`===================================================`);
-console.log(`🎙️  RingDesk AI — Local Voice Receptionist Simulator`);
+console.log(`🎙️  Receptra — Local Voice Receptionist Simulator`);
 console.log(`===================================================`);
 console.log(`Connecting to server at: ${URL}...`);
 

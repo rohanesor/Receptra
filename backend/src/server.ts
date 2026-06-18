@@ -128,7 +128,7 @@ async function startServer() {
 
     server.listen(config.port, () => {
       console.log(`===============================================`);
-      console.log(`🚀 RingDesk AI Backend running on port ${config.port}`);
+      console.log(`🚀 Receptra Backend running on port ${config.port}`);
       console.log(`   Environment: ${config.nodeEnv}`);
       console.log(`   API Endpoint: http://localhost:${config.port}/api/v1`);
       console.log(`===============================================`);

@@ -27,7 +27,7 @@ export default function Layout({ children, activeTab, setActiveTab, hasActiveCal
               <Scissors className="w-6 h-6 text-gold" />
             </div>
             <div>
-              <h1 className="font-extrabold text-lg tracking-wide text-gradient font-sans">RingDesk AI</h1>
+              <h1 className="font-extrabold text-lg tracking-wide text-gradient font-sans">Receptra</h1>
               <p className="text-[10px] text-dark-muted font-semibold tracking-widest uppercase">StyleCraft Barber</p>
             </div>
           </div>
