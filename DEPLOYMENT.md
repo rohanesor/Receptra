@@ -1,0 +1,15 @@
+Backend:
+Railway
+
+Frontend:
+Vercel
+
+Database:
+Neon PostgreSQL
+
+Secrets:
+TWILIO_API_KEY
+DEEPGRAM_API_KEY
+CLAUDE_API_KEY
+ELEVENLABS_API_KEY
+DATABASE_URL
