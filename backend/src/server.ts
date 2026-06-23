@@ -8,6 +8,7 @@ import { config, validateConfig } from './config/index.js';
 import routes from './routes/index.js';
 import { prisma } from './database/client.js';
 import { ConversationManager, activeCalls, dashboardSockets } from './conversation/conversation.manager.js';
+import twilio from 'twilio';
 
 // Validate settings at startup
 validateConfig();
@@ -36,8 +37,31 @@ app.use('/api/v1', routes);
 // Memory map to match Twilio HTTP Webhook details to WebSocket connections
 const pendingCalls = new Map<string, string>();
 
+// Twilio Signature Validation Middleware
+const twilioSignatureValidator = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const isProd = config.nodeEnv === 'production';
+  const hasAuthToken = !!config.twilio.authToken;
+
+  if (isProd || hasAuthToken) {
+    if (!hasAuthToken) {
+      console.error('[Twilio Webhook] Validation failed: TWILIO_AUTH_TOKEN is not set in production.');
+      return res.status(500).send('Configuration Error: TWILIO_AUTH_TOKEN missing.');
+    }
+    
+    // Ensure process.env.TWILIO_AUTH_TOKEN is populated for twilio.webhook()
+    if (!process.env.TWILIO_AUTH_TOKEN && config.twilio.authToken) {
+      process.env.TWILIO_AUTH_TOKEN = config.twilio.authToken;
+    }
+
+    return twilio.webhook({ validate: true })(req, res, next);
+  } else {
+    console.log('[Twilio Webhook Warning] Skipping signature validation in development mode without Auth Token.');
+    return next();
+  }
+};
+
 // TwiML Entrypoint for incoming calls
-app.post('/twilio/voice', (req, res) => {
+app.post('/twilio/voice', twilioSignatureValidator, (req, res) => {
   const callSid = req.body.CallSid || '';
   const from = req.body.From || 'Unknown Caller';
   
