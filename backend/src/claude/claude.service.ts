@@ -160,7 +160,7 @@ export class ClaudeService {
 
     try {
       const stream = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: 1024,
         system: systemPrompt,
         messages: history,
