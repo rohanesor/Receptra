@@ -295,7 +295,7 @@ export class ConversationManager {
   private async executeTool(name: string, input: any): Promise<any> {
     try {
       if (name === 'check_availability') {
-        return await checkAvailability(input.date);
+        return await checkAvailability(input.date, input.serviceId);
       } else if (name === 'create_appointment') {
         const result = await createAppointment(
           input.customerName,

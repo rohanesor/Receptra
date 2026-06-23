@@ -19,13 +19,23 @@ if (
 /**
  * Check available appointment slots for a given date (YYYY-MM-DD)
  */
-export async function checkAvailability(date: string): Promise<{ success: boolean; slots?: string[]; message?: string }> {
+export async function checkAvailability(date: string, serviceId?: string): Promise<{ success: boolean; slots?: string[]; message?: string }> {
   try {
     const startOfDay = DateTime.fromISO(date, { zone: BUSINESS_TIMEZONE }).startOf('day');
     if (!startOfDay.isValid) {
       return { success: false, message: 'Invalid date format. Please use YYYY-MM-DD.' };
     }
     const endOfDay = startOfDay.endOf('day');
+
+    let slotDurationMinutes = 30;
+    if (serviceId) {
+      const service = await prisma.service.findUnique({
+        where: { id: serviceId },
+      });
+      if (service) {
+        slotDurationMinutes = service.durationMinutes;
+      }
+    }
 
     // Fetch existing appointments
     const appointments = await prisma.appointment.findMany({
@@ -44,7 +54,7 @@ export async function checkAvailability(date: string): Promise<{ success: boolea
 
     while (currentSlot < businessEnd) {
       const slotStart = currentSlot;
-      const slotEnd = currentSlot.plus({ minutes: 30 });
+      const slotEnd = currentSlot.plus({ minutes: slotDurationMinutes });
 
       // Check if slot overlaps with any existing booking
       const isOverlapping = appointments.some((app) => {
@@ -53,11 +63,11 @@ export async function checkAvailability(date: string): Promise<{ success: boolea
         return slotStart < appEnd && slotEnd > appStart;
       });
 
-      if (!isOverlapping) {
+      if (slotEnd <= businessEnd && !isOverlapping) {
         availableSlots.push(slotStart.toFormat('hh:mm a'));
       }
 
-      currentSlot = slotEnd;
+      currentSlot = currentSlot.plus({ minutes: 30 });
     }
 
     return {

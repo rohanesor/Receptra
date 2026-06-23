@@ -66,13 +66,17 @@ Remember: Keep responses to less than 25 words unless listing available slots. S
 export const CLAUDE_TOOLS: Anthropic.Tool[] = [
   {
     name: 'check_availability',
-    description: 'Query available booking time slots for a specific date.',
+    description: 'Query available booking time slots for a specific date, optionally matching a specific service duration.',
     input_schema: {
       type: 'object',
       properties: {
         date: {
           type: 'string',
           description: 'The date to query in YYYY-MM-DD format.',
+        },
+        serviceId: {
+          type: 'string',
+          description: 'The UUID service ID of the service the customer wants to check (optional).',
         },
       },
       required: ['date'],
