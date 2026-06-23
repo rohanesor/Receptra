@@ -14,6 +14,7 @@ import twilio from 'twilio';
 validateConfig();
 
 const app = express();
+app.enable('trust proxy');
 const server = http.createServer(app);
 
 // Enable WebSocket support on Express
@@ -70,8 +71,20 @@ app.post('/twilio/voice', twilioSignatureValidator, (req, res) => {
     console.log(`[Twilio Webhook] Received call ${callSid} from ${from}. Caching number.`);
   }
 
-  const host = req.headers.host || `localhost:${config.port}`;
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'wss' : 'ws';
+  // Robust check for secure protocol (wss:// vs ws://)
+  const isSecure = 
+    req.secure || 
+    req.headers['x-forwarded-proto'] === 'https' ||
+    (typeof req.headers['x-forwarded-proto'] === 'string' && req.headers['x-forwarded-proto'].split(',')[0].trim() === 'https') ||
+    req.headers['x-forwarded-ssl'] === 'on' ||
+    req.headers['x-url-scheme'] === 'https';
+
+  const protocol = isSecure ? 'wss' : 'ws';
+  
+  let host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${config.port}`;
+  if (typeof host === 'string' && host.includes(',')) {
+    host = host.split(',')[0].trim();
+  }
   
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
