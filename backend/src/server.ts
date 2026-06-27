@@ -9,6 +9,7 @@ import routes from './routes/index.js';
 import { prisma } from './database/client.js';
 import { ConversationManager, activeCalls, dashboardSockets } from './conversation/conversation.manager.js';
 import twilio from 'twilio';
+import { createRateLimiter } from './middlewares/rateLimiter.js';
 
 // Validate settings at startup
 validateConfig();
@@ -22,7 +23,19 @@ const wsInstance = expressWs(app, server);
 const { app: wssApp } = wsInstance;
 
 // Middlewares
-app.use(cors({ origin: '*' }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (config.allowedOrigins.indexOf(origin) !== -1 || config.nodeEnv === 'development') {
+        return callback(null, true);
+      } else {
+        return callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(
   helmet({
     contentSecurityPolicy: false, // Turn off CSP during development if it interferes with client connections
@@ -32,8 +45,15 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// API Rate Limiting (100 requests per 15 minutes)
+const apiLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: 'Too many requests from this IP, please try again in 15 minutes.',
+});
+
 // REST API Base Route
-app.use('/api/v1', routes);
+app.use('/api/v1', apiLimiter, routes);
 
 // Memory map to match Twilio HTTP Webhook details to WebSocket connections
 const pendingCalls = new Map<string, string>();
