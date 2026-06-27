@@ -112,6 +112,44 @@ app.post('/twilio/voice', twilioSignatureValidator, (req, res) => {
   <Connect>
     <Stream url="${protocol}://${host}/api/v1/twilio/stream" />
   </Connect>
+  <Say voice="Polly.Amy">We are experiencing technical difficulties with our audio connection. Please leave your name, phone number, and message after the tone, and we will call you back.</Say>
+  <Record action="/api/v1/twilio/fallback-record" maxLength="30" playBeep="true" />
+</Response>`;
+
+  res.type('text/xml');
+  res.send(twiml);
+});
+
+// Fallback Voicemail recording for Twilio Media Stream failure
+app.post('/api/v1/twilio/fallback-record', (req, res) => {
+  const from = req.body.From || 'Unknown Caller';
+  const recordingUrl = req.body.RecordingUrl || '';
+  console.log(`[Twilio Fallback Voicemail] Voice message from ${from}: ${recordingUrl}`);
+
+  // Log voicemail message into DB
+  prisma.message.create({
+    data: {
+      customerName: 'Voicemail Backup',
+      customerPhone: from,
+      reason: `Recorded voicemail backup: ${recordingUrl}`,
+    },
+  }).then((msg) => {
+    // Broadcast event over WebSocket to live dashboard
+    ConversationManager.broadcastToDashboard('message_created', {
+      id: msg.id,
+      customerName: msg.customerName,
+      customerPhone: msg.customerPhone,
+      reason: msg.reason,
+      createdAt: msg.createdAt.toISOString(),
+    });
+  }).catch((err) => {
+    console.error('[Twilio Fallback Voicemail DB Error]', err);
+  });
+
+  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="Polly.Amy">Thank you. Your message has been saved. Goodbye.</Say>
+  <Hangup />
 </Response>`;
 
   res.type('text/xml');

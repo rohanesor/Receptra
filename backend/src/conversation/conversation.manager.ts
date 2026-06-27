@@ -175,6 +175,12 @@ export class ConversationManager {
     // Initialize a new ElevenLabs streaming connection for this utterance
     this.currentElevenLabsSession = new ElevenLabsStream({
       onAudio: (base64Audio) => this.sendAudioToTwilio(base64Audio),
+      onError: (err) => {
+        console.error(`[ElevenLabs Error] Error in generateAIResponse for call ${this.callSid}:`, err);
+        if (this.twilioWs.readyState === WebSocket.OPEN) {
+          this.twilioWs.close();
+        }
+      },
       onClose: () => {
         this.aiIsSpeaking = false;
       },
@@ -264,6 +270,12 @@ export class ConversationManager {
   private streamTextToVoice(text: string) {
     this.currentElevenLabsSession = new ElevenLabsStream({
       onAudio: (base64Audio) => this.sendAudioToTwilio(base64Audio),
+      onError: (err) => {
+        console.error(`[ElevenLabs Error] Error in streamTextToVoice for call ${this.callSid}:`, err);
+        if (this.twilioWs.readyState === WebSocket.OPEN) {
+          this.twilioWs.close();
+        }
+      },
       onClose: () => {
         this.aiIsSpeaking = false;
       },
