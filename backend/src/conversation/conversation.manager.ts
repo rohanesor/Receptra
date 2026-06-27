@@ -339,9 +339,8 @@ export class ConversationManager {
 
     const callDurationSeconds = Math.round((new Date().getTime() - this.callStartTime.getTime()) / 1000);
 
-    // Save call log to DB
-    const intent = this.detectPrimaryIntent();
-    const summary = await this.summarizeCall();
+    // Save call log to DB using Claude LLM summarizer
+    const { summary, intent } = await this.claudeService.summarizeCall(this.transcriptLog);
 
     await saveCallLog(
       this.customerPhone,
@@ -360,23 +359,5 @@ export class ConversationManager {
     });
 
     activeCalls.delete(this.callSid);
-  }
-
-  private detectPrimaryIntent(): string {
-    const text = this.transcriptLog.toLowerCase();
-    if (text.includes('create_appointment') || text.includes('booking')) return 'booking';
-    if (text.includes('take_message') || text.includes('message')) return 'message';
-    return 'inquiry';
-  }
-
-  private async summarizeCall(): Promise<string> {
-    // Generate simple local summary based on history
-    if (this.transcriptLog.includes('create_appointment')) {
-      return 'Customer successfully booked an appointment.';
-    }
-    if (this.transcriptLog.includes('take_message')) {
-      return 'Customer left a message for a callback request.';
-    }
-    return 'Customer called to inquire about services/hours.';
   }
 }

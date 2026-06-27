@@ -268,4 +268,62 @@ export class ClaudeService {
       callbacks.onTextToken(word + ' ');
     }
   }
+
+  /**
+   * Generates a high-quality call summary and classifies the caller's primary intent.
+   * Uses Claude 3.5 Haiku if API key is valid; otherwise falls back to basic heuristics.
+   */
+  public async summarizeCall(transcript: string): Promise<{ summary: string; intent: string }> {
+    const isPlaceholder = !config.anthropic.apiKey || 
+                          config.anthropic.apiKey.startsWith('your_') || 
+                          config.anthropic.apiKey === 'mock_key';
+
+    if (isPlaceholder || !transcript.trim()) {
+      return this.fallbackSummarize(transcript);
+    }
+
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 300,
+        system: `You are an expert receptionist assistant. Analyze the following telephone call transcript.
+Output a JSON object with two fields:
+- "summary": A concise one-sentence summary of the conversation.
+- "intent": The primary purpose/intent of the call. Choose exactly one of: "booking", "message", "inquiry", or "unknown".
+Do not output any markdown formatting, XML tags, or conversational text. Output raw JSON only.`,
+        messages: [{ role: 'user', content: `Transcript:\n${transcript}` }],
+      });
+
+      const text = response.content
+        .filter(block => block.type === 'text')
+        .map(block => (block as any).text)
+        .join('')
+        .trim();
+
+      const parsed = JSON.parse(text);
+      return {
+        summary: parsed.summary || 'No summary available.',
+        intent: parsed.intent || 'unknown'
+      };
+    } catch (err) {
+      console.warn('[Claude Service] LLM call summarization failed. Using fallback:', err);
+      return this.fallbackSummarize(transcript);
+    }
+  }
+
+  private fallbackSummarize(transcript: string): { summary: string; intent: string } {
+    const text = transcript.toLowerCase();
+    let intent = 'inquiry';
+    let summary = 'Customer called to inquire about services/hours.';
+
+    if (text.includes('create_appointment') || text.includes('booked') || text.includes('booking')) {
+      intent = 'booking';
+      summary = 'Customer successfully booked an appointment.';
+    } else if (text.includes('take_message') || text.includes('message') || text.includes('callback')) {
+      intent = 'message';
+      summary = 'Customer left a message for a callback request.';
+    }
+
+    return { summary, intent };
+  }
 }
