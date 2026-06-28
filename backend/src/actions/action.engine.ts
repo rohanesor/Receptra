@@ -25,6 +25,12 @@ export async function checkAvailability(date: string, serviceId?: string): Promi
     if (!startOfDay.isValid) {
       return { success: false, message: 'Invalid date format. Please use YYYY-MM-DD.' };
     }
+
+    const now = DateTime.now().setZone(BUSINESS_TIMEZONE);
+    if (startOfDay < now.startOf('day')) {
+      return { success: true, slots: [], message: 'Cannot query or book appointments in the past.' };
+    }
+
     const endOfDay = startOfDay.endOf('day');
 
     let slotDurationMinutes = 30;
@@ -56,6 +62,9 @@ export async function checkAvailability(date: string, serviceId?: string): Promi
       const slotStart = currentSlot;
       const slotEnd = currentSlot.plus({ minutes: slotDurationMinutes });
 
+      // If slot is today, ensure it starts at least 15 minutes in the future
+      const isPastSlot = slotStart < now.plus({ minutes: 15 });
+
       // Check if slot overlaps with any existing booking
       const isOverlapping = appointments.some((app) => {
         const appStart = DateTime.fromJSDate(app.startTime).setZone(BUSINESS_TIMEZONE);
@@ -63,7 +72,7 @@ export async function checkAvailability(date: string, serviceId?: string): Promi
         return slotStart < appEnd && slotEnd > appStart;
       });
 
-      if (slotEnd <= businessEnd && !isOverlapping) {
+      if (slotEnd <= businessEnd && !isPastSlot && !isOverlapping) {
         availableSlots.push(slotStart.toFormat('hh:mm a'));
       }
 
@@ -101,6 +110,11 @@ export async function createAppointment(
     const startDt = DateTime.fromISO(startTime, { zone: BUSINESS_TIMEZONE });
     if (!startDt.isValid) {
       return { success: false, message: 'Invalid start time format.' };
+    }
+
+    const now = DateTime.now().setZone(BUSINESS_TIMEZONE);
+    if (startDt < now.minus({ minutes: 5 })) { // 5m grace period for minor network latency
+      return { success: false, message: 'Cannot book an appointment in the past.' };
     }
 
     const endDt = startDt.plus({ minutes: service.durationMinutes });
