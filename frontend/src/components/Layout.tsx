@@ -41,15 +41,15 @@ export default function Layout({ children, activeTab, setActiveTab, hasActiveCal
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 group ${
                     isActive
-                      ? 'bg-gold text-dark-bg font-semibold shadow-lg shadow-gold/10'
+                      ? 'bg-gold text-dark-bg font-semibold shadow-lg shadow-gold/10 scale-[1.02]'
                       : 'text-dark-muted hover:bg-dark-border/40 hover:text-dark-text'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-dark-bg' : 'text-gold'}`} />
-                    <span>{item.label}</span>
+                    <Icon className={`w-4 h-4 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 ${isActive ? 'text-dark-bg' : 'text-gold'}`} />
+                    <span className="transition-transform duration-300 group-hover:translate-x-0.5">{item.label}</span>
                   </div>
                   {item.indicator && (
                     <span className="flex h-2.5 w-2.5 relative">
@@ -78,7 +78,7 @@ export default function Layout({ children, activeTab, setActiveTab, hasActiveCal
         {/* Top Header */}
         <header className="h-16 border-b border-dark-border/40 flex items-center justify-between px-8 bg-dark-card/30 backdrop-blur-md z-10">
           <div>
-            <h2 className="text-sm font-semibold tracking-wider uppercase text-dark-muted">
+            <h2 key={activeTab} className="text-sm font-semibold tracking-wider uppercase text-dark-muted animate-header-entry">
               {menuItems.find((m) => m.id === activeTab)?.label}
             </h2>
           </div>
