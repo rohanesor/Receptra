@@ -91,7 +91,9 @@ export default function Layout({ children, activeTab, setActiveTab, hasActiveCal
 
         {/* Dynamic Panel Content */}
         <div className="flex-1 overflow-y-auto p-8 relative">
-          {children}
+          <div key={activeTab} className="animate-tab-entry h-full">
+            {children}
+          </div>
         </div>
       </main>
     </div>

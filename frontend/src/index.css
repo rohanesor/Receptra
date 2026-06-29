@@ -36,3 +36,18 @@
 .text-gradient {
   @apply bg-clip-text text-transparent bg-gradient-to-r from-gold-light via-gold to-gold-dark;
 }
+
+@keyframes fadeInSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-tab-entry {
+  animation: fadeInSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
