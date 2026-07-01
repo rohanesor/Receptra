@@ -166,11 +166,15 @@ export default function Appointments() {
               No appointments scheduled for this date.
             </div>
           ) : (
-            appointments.map((app) => {
+            appointments.map((app, idx) => {
               const start = new Date(app.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               const end = new Date(app.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               return (
-                <div key={app.id} className="glass-card p-5 flex items-center justify-between border-l-4 border-l-gold hover:border-dark-border hover:bg-dark-card/60 transition-all duration-200">
+                <div
+                  key={app.id}
+                  className="glass-card p-5 flex items-center justify-between border-l-4 border-l-gold hover:border-dark-border hover:bg-dark-card/60 transition-all duration-300 animate-stagger-card"
+                  style={{ animationDelay: `${idx * 80}ms` }}
+                >
                   <div className="flex items-center gap-6">
                     {/* Time Slot Block */}
                     <div className="flex flex-col items-center justify-center bg-dark-border/40 px-3 py-2 rounded-lg border border-dark-border min-w-[70px]">

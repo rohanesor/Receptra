@@ -118,8 +118,15 @@ export default function LiveCalls({ activeCall }: LiveCallsProps) {
         {/* Scrollable Conversation Stream */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-dark-bg/25">
           {activeCall.transcript.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-dark-muted text-xs font-medium italic">
-              Initializing stream...
+            <div className="h-full flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3 text-gold">
+                <div className="flex items-center gap-1.5">
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                </div>
+                <p className="text-xs text-dark-muted font-medium">Receptionist is listening...</p>
+              </div>
             </div>
           ) : (
             activeCall.transcript.map((line, idx) => {
@@ -127,7 +134,8 @@ export default function LiveCalls({ activeCall }: LiveCallsProps) {
               return (
                 <div
                   key={idx}
-                  className={`flex gap-4 max-w-xl ${isAgent ? 'mr-auto' : 'ml-auto flex-row-reverse'}`}
+                  className={`flex gap-4 max-w-xl animate-stagger-card ${isAgent ? 'mr-auto' : 'ml-auto flex-row-reverse'}`}
+                  style={{ animationDelay: `${idx * 60}ms` }}
                 >
                   {/* Icon */}
                   <div
