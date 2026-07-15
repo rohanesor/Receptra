@@ -13,43 +13,53 @@ model Service {
   durationMinutes Int           @map("duration_minutes")
   price           Decimal
   createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at")
+  deletedAt       DateTime?     @map("deleted_at")
   appointments    Appointment[]
 
   @@map("services")
 }
 
 model Appointment {
-  id            String   @id @default(uuid())
-  customerName  String   @map("customer_name")
-  customerPhone String   @map("customer_phone")
-  serviceId     String   @map("service_id")
-  service       Service  @relation(fields: [serviceId], references: [id])
-  startTime     DateTime @map("start_time")
-  endTime       DateTime @map("end_time")
-  status        String   @default("booked") // 'booked', 'cancelled', 'completed'
-  createdAt     DateTime @default(now()) @map("created_at")
+  id            String    @id @default(uuid())
+  customerName  String    @map("customer_name")
+  customerPhone String    @map("customer_phone")
+  serviceId     String    @map("service_id")
+  service       Service   @relation(fields: [serviceId], references: [id])
+  startTime     DateTime  @map("start_time")
+  endTime       DateTime  @map("end_time")
+  status        String    @default("booked") // 'booked', 'cancelled', 'completed'
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
 
   @@map("appointments")
 }
 
 model CallLog {
-  id        String   @id @default(uuid())
-  phone     String
+  id         String    @id @default(uuid())
+  phone      String
   transcript String
-  summary   String?
-  intent    String?
-  duration  Int? // Duration in seconds
-  timestamp DateTime @default(now())
+  summary    String?
+  intent     String?
+  duration   Int? // Duration in seconds
+  timestamp  DateTime  @default(now())
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
 
   @@map("call_logs")
 }
 
 model Message {
-  id            String   @id @default(uuid())
-  customerName  String   @map("customer_name")
-  customerPhone String   @map("customer_phone")
+  id            String    @id @default(uuid())
+  customerName  String    @map("customer_name")
+  customerPhone String    @map("customer_phone")
   reason        String
-  createdAt     DateTime @default(now()) @map("created_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
 
   @@map("messages")
 }
+

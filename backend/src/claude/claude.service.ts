@@ -19,7 +19,9 @@ export interface MessageParam {
  * Dynamically queries the services from the database and constructs the system prompt
  */
 export async function getSystemPrompt(customerPhone: string): Promise<string> {
-  const services = await prisma.service.findMany();
+  const services = await prisma.service.findMany({
+    where: { deletedAt: null },
+  });
   const servicesList = services
     .map((s) => `- ${s.name}: Price $${s.price}, Duration ${s.durationMinutes} minutes (Service ID: ${s.id})`)
     .join('\n');
@@ -226,7 +228,9 @@ export class ClaudeService {
 
     // Prioritize booking confirmation block if we have a names/confirmation context
     if (userText.trim().length > 0 && history.length >= 5) {
-      const services = await prisma.service.findMany();
+      const services = await prisma.service.findMany({
+        where: { deletedAt: null },
+      });
       const service = services.find(s => s.name.toLowerCase().includes('haircut')) || services[0];
       
       // Extract name from "my name is X" or similar, or default to capitalization of input
@@ -254,7 +258,9 @@ export class ClaudeService {
       }, 1500);
       return;
     } else if (userText.includes('haircut') || userText.includes('beard') || userText.includes('facial')) {
-      const services = await prisma.service.findMany();
+      const services = await prisma.service.findMany({
+        where: { deletedAt: null },
+      });
       const haircut = services.find(s => s.name.toLowerCase().includes('haircut')) || services[0];
       
       responseText = `Great! A ${haircut.name} is $${haircut.price} and takes ${haircut.durationMinutes} minutes. We have slots available tomorrow at 10:00 AM and 2:30 PM. What time works for you?`;

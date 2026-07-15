@@ -26,6 +26,7 @@ export async function getAppointments(req: Request, res: Response) {
 
     const appointments = await prisma.appointment.findMany({
       where: {
+        deletedAt: null,
         startTime: {
           gte: startOfDay.toJSDate(),
           lte: endOfDay.toJSDate(),
@@ -67,8 +68,8 @@ export async function createAppointment(req: Request, res: Response) {
     }
 
     // Verify service exists
-    const service = await prisma.service.findUnique({
-      where: { id: serviceId },
+    const service = await prisma.service.findFirst({
+      where: { id: serviceId, deletedAt: null },
     });
 
     if (!service) {
@@ -106,6 +107,7 @@ export async function createAppointment(req: Request, res: Response) {
     const overlapping = await prisma.appointment.findFirst({
       where: {
         status: { not: 'cancelled' },
+        deletedAt: null,
         AND: [
           {
             startTime: {
@@ -155,3 +157,47 @@ export async function createAppointment(req: Request, res: Response) {
     });
   }
 }
+
+/**
+ * Soft delete an appointment
+ */
+export async function deleteAppointment(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Appointment ID is required.',
+      });
+    }
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+    });
+
+    if (!appointment || appointment.deletedAt) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found.',
+      });
+    }
+
+    await prisma.appointment.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Appointment deleted successfully.',
+    });
+  } catch (error) {
+    console.error('Error deleting appointment:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete appointment.',
+    });
+  }
+}
+

@@ -7,6 +7,7 @@ import { prisma } from '../database/client.js';
 export async function getCallLogs(req: Request, res: Response) {
   try {
     const logs = await prisma.callLog.findMany({
+      where: { deletedAt: null },
       orderBy: { timestamp: 'desc' },
       take: 50,
     });
@@ -67,6 +68,7 @@ export async function createCallLog(req: Request, res: Response) {
 export async function getMessages(req: Request, res: Response) {
   try {
     const messages = await prisma.message.findMany({
+      where: { deletedAt: null },
       orderBy: { createdAt: 'desc' },
     });
     
@@ -117,3 +119,90 @@ export async function createMessage(req: Request, res: Response) {
     });
   }
 }
+
+/**
+ * Soft delete a call log
+ */
+export async function deleteCallLog(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Call log ID is required.',
+      });
+    }
+
+    const log = await prisma.callLog.findUnique({
+      where: { id },
+    });
+
+    if (!log || log.deletedAt) {
+      return res.status(404).json({
+        success: false,
+        message: 'Call log not found.',
+      });
+    }
+
+    await prisma.callLog.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Call log deleted successfully.',
+    });
+  } catch (error) {
+    console.error('Error deleting call log:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete call log.',
+    });
+  }
+}
+
+/**
+ * Soft delete a callback message
+ */
+export async function deleteMessage(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message ID is required.',
+      });
+    }
+
+    const message = await prisma.message.findUnique({
+      where: { id },
+    });
+
+    if (!message || message.deletedAt) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found.',
+      });
+    }
+
+    await prisma.message.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Message deleted successfully.',
+    });
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete message.',
+    });
+  }
+}
+

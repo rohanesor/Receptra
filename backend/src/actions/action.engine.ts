@@ -35,8 +35,8 @@ export async function checkAvailability(date: string, serviceId?: string): Promi
 
     let slotDurationMinutes = 30;
     if (serviceId) {
-      const service = await prisma.service.findUnique({
-        where: { id: serviceId },
+      const service = await prisma.service.findFirst({
+        where: { id: serviceId, deletedAt: null },
       });
       if (service) {
         slotDurationMinutes = service.durationMinutes;
@@ -51,6 +51,7 @@ export async function checkAvailability(date: string, serviceId?: string): Promi
           lte: endOfDay.toJSDate(),
         },
         status: { not: 'cancelled' },
+        deletedAt: null,
       },
     });
 
@@ -99,8 +100,8 @@ export async function createAppointment(
   startTime: string
 ): Promise<{ success: boolean; appointment?: any; message: string }> {
   try {
-    const service = await prisma.service.findUnique({
-      where: { id: serviceId },
+    const service = await prisma.service.findFirst({
+      where: { id: serviceId, deletedAt: null },
     });
 
     if (!service) {
@@ -131,6 +132,7 @@ export async function createAppointment(
     const overlapping = await prisma.appointment.findFirst({
       where: {
         status: { not: 'cancelled' },
+        deletedAt: null,
         AND: [
           { startTime: { lt: endDt.toJSDate() } },
           { endTime: { gt: startDt.toJSDate() } },
